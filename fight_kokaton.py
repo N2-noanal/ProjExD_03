@@ -148,9 +148,10 @@ def main():
                 return
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beam = Beam(bird)
-                pg.display.update()
-        
+        tmr += 1
         screen.blit(bg_img, [0, 0])
+        
+        bomb.update(screen)
         
         if bird.rct.colliderect(bomb.rct):
             # ゲームオーバー時に，こうかとん画像を切り替え，1秒間表示させる
@@ -165,12 +166,13 @@ def main():
         if beam is not None:  # ビームが存在している時
             beam.update(screen)
             if beam.mrct.colliderect(bomb.rct):
-                del beam, bomb
+                beam = None
+                del bomb
+                bird.change_img(6, screen)
                 pg.display.update()
-            
-        bomb.update(screen)
+                break
+        
         pg.display.update()
-        tmr += 1
         clock.tick(100)
 
 
