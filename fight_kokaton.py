@@ -40,14 +40,19 @@ class Bird:
         引数1 num：こうかとん画像ファイル名の番号
         引数2 xy：こうかとん画像の位置座標タプル
         """
-        self.img = pg.transform.flip(  # 左右反転
-            pg.transform.rotozoom(  # 2倍に拡大
-                pg.image.load(f"ex03/fig/{num}.png"), 
-                0, 
-                2.0), 
-            True, 
-            False
-        )
+        img0 = pg.transform.rotozoom(pg.image.load(f"ex03/fig/{num}.png"), 0, 2.0)  # 左向き，2倍
+        img1 = pg.transform.flip(img0, True, False)  # 右向き，2倍
+        self.imgs = {
+            (+5, 0): img1,  # 右
+            (+5, -5): pg.transform.rotozoom(img1, 45, 1.0),  # 右上
+            (0, -5): pg.transform.rotozoom(img1, 90, 1.0),  # 上
+            (-5, -5): pg.transform.rotozoom(img0, -45, 1.0), # 左上
+            (-5, 0): img0,  # 左
+            (-5, +5): pg.transform.rotozoom(img0, 45, 1.0),  # 左下
+            (0, +5): pg.transform.rotozoom(img1, -90, 1.0),  # 下
+            (+5, +5): pg.transform.rotozoom(img1, -45, 1.0),  # 右下
+        }
+        self.img = self.imgs[(+5, 0)] # 右向きがデフォルト
         self.rct = self.img.get_rect()
         self.rct.center = xy
 
@@ -73,7 +78,11 @@ class Bird:
                 sum_mv[1] += mv[1]
         self.rct.move_ip(sum_mv)
         if check_bound(self.rct) != (True, True):
-            self.rct.move_ip(-sum_mv[0], -sum_mv[1])
+            for k, mv in __class__.delta.items():
+                if key_lst[k]:
+                    self.rct.move_ip(-mv[0], -mv[1])
+        if not (sum_mv[0] == 0 and sum_mv[1] == 0):
+            self.img = self.imgs[tuple(sum_mv)] 
         screen.blit(self.img, self.rct)
 
 
@@ -117,19 +126,19 @@ class Beam(pg.sprite.Sprite):
         ビームを生成する
         """
         super().__init__() # 親クラスのイニシャライザを呼び出す
-        self.mimg = pg.transform.rotozoom(pg.image.load("ex03/fig/beam.png"), 0, 2.0)
-        self.mrct = self.mimg.get_rect()
-        self.mrct.left = bird.rct.right  # こうかとんの右側にビームの左側を合わせる
-        self.mrct.centery = bird.rct.centery
-        self.mvx, self.mvy = +5, 0
+        self.img = pg.transform.rotozoom(pg.image.load("ex03/fig/beam.png"), 0, 2.0)
+        self.rct = self.img.get_rect()
+        self.rct.left = bird.rct.right  # こうかとんの右側にビームの左側を合わせる
+        self.rct.centery = bird.rct.centery
+        self.vx, self.vy = +5, 0
 
     def update(self, screen: pg.Surface):
         """
         ビームを速度self._vyに基づき移動させる
         引数 screen：画面Surface
         """
-        self.mrct.move_ip(self.mvx, self.mvy)
-        screen.blit(self.mimg, self.mrct)
+        self.rct.move_ip(self.vx, self.vy)
+        screen.blit(self.img, self.rct)
 
 
 def main():
@@ -165,7 +174,7 @@ def main():
         
         if beam is not None:  # ビームが存在している時
             beam.update(screen)
-            if beam.mrct.colliderect(bomb.rct):
+            if beam.rct.colliderect(bomb.rct):
                 beam = None
                 del bomb
                 bird.change_img(6, screen)
