@@ -107,6 +107,30 @@ class Bomb:
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
+    
+class Beam(pg.sprite.Sprite):
+    """
+    ビームに関するクラス
+    """
+    def __init__(self, bird: Bird):
+        """
+        ビームを生成する
+        """
+        super().__init__() # 親クラスのイニシャライザを呼び出す
+        self.mimg = pg.transform.rotozoom(pg.image.load("ex03/fig/beam.png"), 0, 2.0)
+        self.mrct = self.mimg.get_rect()
+        self.mrct.left = bird.rct.right  # こうかとんの右側にビームの左側を合わせる
+        self.mrct.centery = bird.rct.centery
+        self.mvx, self.mvy = +5, 0
+
+    def update(self, screen: pg.Surface):
+        """
+        ビームを速度self._vyに基づき移動させる
+        引数 screen：画面Surface
+        """
+        self.mrct.move_ip(self.mvx, self.mvy)
+        screen.blit(self.mimg, self.mrct)
+
 
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
@@ -114,6 +138,7 @@ def main():
     bg_img = pg.image.load("ex03/fig/pg_bg.jpg")
     bird = Bird(3, (900, 400))
     bomb = Bomb((255, 0, 0), 10)
+    beam = None
 
     clock = pg.time.Clock()
     tmr = 0
@@ -121,6 +146,9 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                beam = Beam(bird)
+                pg.display.update()
         
         screen.blit(bg_img, [0, 0])
         
@@ -133,10 +161,17 @@ def main():
 
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
+        
+        if beam is not None:  # ビームが存在している時
+            beam.update(screen)
+            if beam.mrct.colliderect(bomb.rct):
+                del beam, bomb
+                pg.display.update()
+            
         bomb.update(screen)
         pg.display.update()
         tmr += 1
-        clock.tick(50)
+        clock.tick(100)
 
 
 if __name__ == "__main__":
