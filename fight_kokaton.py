@@ -143,6 +143,31 @@ class Beam(pg.sprite.Sprite):
         screen.blit(self.img, self.rct)
 
 
+class Explosion(pg.sprite.Sprite):
+    """
+    爆発に関するクラス
+    """
+    def __init__(self, obj, life):
+        """
+        爆弾が爆発するエフェクトを生成する
+        引数1 obj：爆発するBomb
+        引数2 life：爆発時間
+        """
+        super().__init__()
+        img = pg.image.load("ex03/fig/explosion.gif")
+        self.imgs = [img, pg.transform.flip(img, 1, 1)]
+        self.image = self.imgs[0]
+        self.rect = self.image.get_rect(center=obj.rct.center)
+        self.life = life
+
+    def update(self):
+        """
+        爆発エフェクトを表現する
+        """
+        self.life -= 1
+        self.image = self.imgs[self.life//10%2]
+        
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -150,7 +175,7 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = [Bomb() for _ in range(NUM_OF_BOMBS)]
     beam = None
-
+    explosions = []  # 爆発エフェクトを追跡するリスト
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -161,6 +186,12 @@ def main():
                 beam = Beam(bird)
         tmr += 1
         screen.blit(bg_img, [0, 0])
+        
+        # 爆発エフェクトを更新
+        for explosion in explosions:
+            explosion.update()
+            if explosion.life <= 0:
+                explosions.remove(explosion)  # 寿命が0以下になったエフェクトを削除
         
         for bomb in bombs:
             bomb.update(screen)
@@ -177,15 +208,19 @@ def main():
         if beam is not None:  # ビームが存在している時
             beam.update(screen)
             for i, bomb in enumerate(bombs):
-                if beam.mrct.colliderect(bomb.rct):
+                if beam.rct.colliderect(bomb.rct):
                     beam = None
                     del bombs[i]
                     bird.change_img(6, screen)
-                    pg.display.update()
+                    explosions.append(Explosion(bomb, 50))  # スプライトグループに追加
                     break
-        
+          
+        # 爆発エフェクトを画面に描画      
+        for explosion in explosions:
+            screen.blit(explosion.image, explosion.rect)
+            
         pg.display.update()
-        clock.tick(100)
+        clock.tick(50)
 
 
 if __name__ == "__main__":
