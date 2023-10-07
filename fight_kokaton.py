@@ -1,7 +1,7 @@
 import random
 import sys
 import time
-
+import math
 import pygame as pg
 
 
@@ -55,6 +55,7 @@ class Bird:
         self.img = self.imgs[(+5, 0)] # 右向きがデフォルト
         self.rct = self.img.get_rect()
         self.rct.center = xy
+        self.dire = (+5, 0)
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -81,8 +82,10 @@ class Bird:
             for k, mv in __class__.delta.items():
                 if key_lst[k]:
                     self.rct.move_ip(-mv[0], -mv[1])
-        if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.img = self.imgs[tuple(sum_mv)] 
+        if sum_mv != [0, 0]:
+            self.dire = tuple(sum_mv)  # 移動量の合計値を方向タプルに設定
+        if self.dire in self.imgs:
+            self.img = self.imgs[self.dire]
         screen.blit(self.img, self.rct)
 
 
@@ -128,11 +131,15 @@ class Beam(pg.sprite.Sprite):
         ビームを生成する
         """
         super().__init__() # 親クラスのイニシャライザを呼び出す
-        self.img = pg.transform.rotozoom(pg.image.load("ex03/fig/beam.png"), 0, 2.0)
+        vx, vy = bird.dire # こうかとんが向いている方向をvx, vyに代入
+        theta = math.atan2(-vy, vx) # 直交座標(x, -y)から極座標の角度Θに変換
+        self.img = pg.transform.rotozoom(pg.image.load("ex03/fig/beam.png"), math.degrees(theta), 2.0) # 弧度法から度数法に変換し、rotozoomで回転
         self.rct = self.img.get_rect()
-        self.rct.left = bird.rct.right  # こうかとんの右側にビームの左側を合わせる
-        self.rct.centery = bird.rct.centery
-        self.vx, self.vy = +5, 0
+        # ビームの中心横座標＝こうかとんの中心横座標＋こうかとんの横幅✖ビームの横速度÷５
+        self.rct.centerx = bird.rct.centerx + bird.rct.width * vx / 5
+        # ビームの中心縦座標＝こうかとんの中心縦座標＋こうかとんの高さ✖ビームの縦速度÷５
+        self.rct.centery = bird.rct.centery + bird.rct.height * vy / 5
+        self.vx, self.vy = vx, vy
 
     def update(self, screen: pg.Surface):
         """
