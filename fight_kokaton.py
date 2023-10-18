@@ -118,7 +118,7 @@ class Bomb:
             self.vx *= -1
         if not tate:
             self.vy *= -1
-        self.rct.move_ip(self.vx, self.vy)
+        self.rct.move_ip(self.vx, self.vy) # 爆弾の範囲を上記の条件に沿って動かす
         screen.blit(self.img, self.rct)
 
     
